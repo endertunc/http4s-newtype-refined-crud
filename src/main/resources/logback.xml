@@ -1,0 +1,16 @@
+<configuration>
+
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{20} [%X{correlationId}] - %msg%n</pattern></encoder>
+  </appender>
+
+  <logger name="org.flywaydb" level="INFO"/>
+  <logger name="org.testcontainers" level="INFO"/>
+  <logger name="com.github.dockerjava" level="WARN"/>
+  <logger name="car.advert" level="TRACE"/>
+
+  <root level="WARN">
+    <appender-ref ref="STDOUT" />
+  </root>
+</configuration>
