@@ -5,10 +5,8 @@ import doobie.Query0
 import doobie.Read
 import doobie._
 import doobie.implicits._
-import doobie.refined.implicits._
 
 import car.advert.http.Pagination
-import car.advert.model.Instances._
 
 trait SqlPaginationSupport {
 

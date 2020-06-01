@@ -10,7 +10,7 @@
   <logger name="com.github.dockerjava" level="WARN"/>
   <logger name="car.advert" level="TRACE"/>
 
-  <root level="WARN">
+  <root level="INFO">
     <appender-ref ref="STDOUT" />
   </root>
 </configuration>

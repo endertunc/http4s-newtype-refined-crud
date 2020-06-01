@@ -4,17 +4,13 @@ import cats.data.ValidatedNec
 import cats.effect.Sync
 import cats.implicits._
 
-import eu.timepit.refined.cats._
-
 import car.advert.http.Pagination.Limit
 import car.advert.http.Pagination.MaxLimit
 import car.advert.http.Pagination.Offset
 import car.advert.http.Pagination.RefinedLimit
 import car.advert.http.Pagination.RefinedOffset
 import car.advert.http.PaginationValidator.{ InvalidLimit, InvalidOffset, PaginationError }
-import car.advert.model.Instances._
 import car.advert.model.error.AppError.ValidationError
-import car.advert.model.validation.ValidationErrors
 import car.advert.model.validation.ValidationErrors
 import io.chrisdavenport.log4cats.Logger
 
@@ -40,10 +36,10 @@ trait PaginationValidator {
       )
 
   private def validateOffset(offset: Long): PaginationValidationResult[Offset] =
-    RefinedOffset.from(offset).bifoldMap(_ => InvalidOffset.invalidNec[Offset], refinedOffset => Offset(refinedOffset).validNec[PaginationError])
+    RefinedOffset.from(offset).fold(_ => InvalidOffset.invalidNec[Offset], refinedOffset => Offset(refinedOffset).validNec[PaginationError])
 
   private def validateLimit(limit: Long): PaginationValidationResult[Limit] =
-    RefinedLimit.from(limit).bifoldMap(_ => InvalidLimit.invalidNec[Limit], refinedLimit => Limit(refinedLimit).validNec[PaginationError])
+    RefinedLimit.from(limit).fold(_ => InvalidLimit.invalidNec[Limit], refinedLimit => Limit(refinedLimit).validNec[PaginationError])
 
 }
 

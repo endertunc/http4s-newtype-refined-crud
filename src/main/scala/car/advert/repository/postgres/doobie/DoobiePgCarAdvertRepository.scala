@@ -12,7 +12,6 @@ import com.colisweb.tracing.core.TracingContext
 
 import car.advert.TracingUtils._
 import car.advert.http.Pagination
-import car.advert.model.Instances._
 import car.advert.model.OrderByCriteria
 import car.advert.model.entity.CarAdvert
 import car.advert.model.entity.CarAdvert

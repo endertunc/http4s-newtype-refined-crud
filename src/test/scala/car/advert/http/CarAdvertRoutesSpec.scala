@@ -4,7 +4,6 @@ import org.http4s._
 import org.http4s.circe.{ CirceEntityDecoder, CirceEntityEncoder }
 import org.http4s.implicits._
 
-import cats.NonEmptyTraverse.ops.toAllNonEmptyTraverseOps
 import cats.effect.IO
 import cats.implicits._
 
@@ -16,33 +15,24 @@ import org.scalatest.matchers.should.Matchers
 import car.advert.base.ServicesAndRepos
 import car.advert.generators.CarAdvertGenerator
 import car.advert.generators.CarAdvertInGenerator
-import car.advert.generators.CarAdvertInGenerator
-import car.advert.model.OrderByCriteria
-import car.advert.model.OrderByCriteria
 import car.advert.model.OrderByCriteria
 import car.advert.model.OrderByCriteria.FirstRegistration
-import car.advert.model.OrderByCriteria.FirstRegistration
-import car.advert.model.OrderByCriteria.Mileage
 import car.advert.model.OrderByCriteria.Mileage
 import car.advert.model.OrderByCriteria.Price
-import car.advert.model.OrderByCriteria.Price
-import car.advert.model.OrderByCriteria.Price
 import car.advert.model.entity.CarAdvert
-import car.advert.model.entity.CarAdvert
-import car.advert.model.error.CommonError
-import car.advert.quill.CarAdverts
+import car.advert.model.error.Error_OUT.SimpleErrorResponse
 import car.advert.quill.CarAdverts
 
+// Extent the test in such a way that when something goes wrong I should be able to see response body.
 class CarAdvertRoutesSpec extends AsyncFlatSpec with ServicesAndRepos with Matchers with CirceEntityDecoder with CirceEntityEncoder {
 
   implicit def criteriaQueryParamDecoder: QueryParamEncoder[OrderByCriteria] = (value: OrderByCriteria) => QueryParameterValue(value.entryName)
-
-  private val root: Uri = uri""
+  private val root: Uri                                                      = uri"/advert"
 
   "Car advert" should "allow to create car advert" in ioSuit {
     for {
       carAdvert <- CarAdvertInGenerator.generateNewCarAdvertIn.pure[IO]
-      request   <- Request[IO](method = Method.POST, uri = root, body = carAdvert)
+      request   <- Request[IO](method = Method.POST, uri = root).withEntity(carAdvert)
       response  <- ctx.httpApp.run(request)
       _         <- response.as[CarAdvert]
     } yield response.status shouldBe Status.Ok
@@ -62,13 +52,13 @@ class CarAdvertRoutesSpec extends AsyncFlatSpec with ServicesAndRepos with Match
 
   it should "return bad request when car advert does not exist" in ioSuit {
     for {
-      nonExistCarAdvert <- CarAdvertGenerator.generateNewCarAdvert.pure[IO]
-      request           <- Request[IO](method = Method.GET, uri = root / nonExistCarAdvert.id.value.value)
-      response          <- ctx.httpApp.run(request)
-      commonError       <- response.as[CommonError]
+      nonExistCarAdvert   <- CarAdvertGenerator.generateNewCarAdvert.pure[IO]
+      request             <- Request[IO](method = Method.GET, uri = root / nonExistCarAdvert.id.value.value)
+      response            <- ctx.httpApp.run(request)
+      simpleErrorResponse <- response.as[SimpleErrorResponse]
     } yield {
       response.status shouldBe Status.NotFound
-      commonError.errors.length shouldBe 1
+      simpleErrorResponse.message shouldBe s"CarAdvert with id [${nonExistCarAdvert.id}] is not found"
     }
   }
 
@@ -106,7 +96,7 @@ class CarAdvertRoutesSpec extends AsyncFlatSpec with ServicesAndRepos with Match
         CarAdvertGenerator.generateUsedCarAdvert
       ).traverse(CarAdverts.insert)
       criteria   <- (Price: OrderByCriteria).pure[IO]
-      request    <- Request[IO](method = Method.GET, uri = root +? ("orderBy", criteria))
+      request    <- Request[IO](method = Method.GET, uri = root / "list" +? ("orderBy", criteria))
       response   <- ctx.httpApp.run(request)
       carAdverts <- response.as[List[CarAdvert]]
     } yield {
@@ -126,7 +116,7 @@ class CarAdvertRoutesSpec extends AsyncFlatSpec with ServicesAndRepos with Match
         CarAdvertGenerator.generateUsedCarAdvert
       ).traverse(CarAdverts.insert)
       criteria   <- (FirstRegistration: OrderByCriteria).pure[IO]
-      request    <- Request[IO](method = Method.GET, uri = root +? ("orderBy", criteria))
+      request    <- Request[IO](method = Method.GET, uri = root / "list" +? ("orderBy", criteria))
       response   <- ctx.httpApp.run(request)
       carAdverts <- response.as[List[CarAdvert]]
     } yield {
@@ -148,7 +138,7 @@ class CarAdvertRoutesSpec extends AsyncFlatSpec with ServicesAndRepos with Match
         CarAdvertGenerator.generateUsedCarAdvert
       ).traverse(CarAdverts.insert)
       criteria   <- (Mileage: OrderByCriteria).pure[IO]
-      request    <- Request[IO](method = Method.GET, uri = root +? ("orderBy", criteria))
+      request    <- Request[IO](method = Method.GET, uri = root / "list" +? ("orderBy", criteria))
       response   <- ctx.httpApp.run(request)
       carAdverts <- response.as[List[CarAdvert]]
     } yield {
@@ -162,63 +152,4 @@ class CarAdvertRoutesSpec extends AsyncFlatSpec with ServicesAndRepos with Match
     }
   }
 
-  //  it should "order list car adverts by fuelType" in ioSuit {
-  //
-  //    for {
-  //      insertedAdverts <- List(
-  //        CarAdvertGenerator.generateUsedCarAdvert.copy(fuelType = Gasoline),
-  //        CarAdvertGenerator.generateUsedCarAdvert.copy(fuelType = Diesel),
-  //        CarAdvertGenerator.generateUsedCarAdvert.copy(fuelType = Gasoline),
-  //        CarAdvertGenerator.generateUsedCarAdvert.copy(fuelType = Diesel),
-  //        CarAdvertGenerator.generateUsedCarAdvert.copy(fuelType = Gasoline)
-  //      ).traverse(CarAdverts.insert)
-  //      criteria   <- (FuelType: OrderByCriteria).pure[IO]
-  //      request    <- Request[IO](method = Method.GET, uri = root +? ("orderBy", criteria))
-  //      response   <- ctx.httpApp.run(request)
-  //      carAdverts <- response.as[List[CarAdvert]]
-  //    } yield {
-  //      response.status shouldBe Status.Ok
-  //      val expectedResult = insertedAdverts.sortWith(_.fuelType.entryName < _.fuelType.entryName)
-  //      carAdverts should contain theSameElementsInOrderAs expectedResult
-  //    }
-  //  }
-  //
-  //  it should "order list car adverts by offerType" in ioSuit {
-  //
-  //    for {
-  //      insertedAdverts <- List(
-  //        CarAdvertGenerator.generateUsedCarAdvert,
-  //        CarAdvertGenerator.generateNewCarAdvert,
-  //        CarAdvertGenerator.generateUsedCarAdvert,
-  //        CarAdvertGenerator.generateNewCarAdvert,
-  //        CarAdvertGenerator.generateUsedCarAdvert
-  //      ).traverse(CarAdverts.insert)
-  //      criteria   <- (OfferType: OrderByCriteria).pure[IO]
-  //      request    <- Request[IO](method = Method.GET, uri = root +? ("orderBy", criteria))
-  //      response   <- ctx.httpApp.run(request)
-  //      carAdverts <- response.as[List[CarAdvert]]
-  //    } yield {
-  //      response.status shouldBe Status.Ok
-  //      val expectedResult = insertedAdverts.sortWith(_.offerType.entryName < _.offerType.entryName)
-  //      carAdverts should contain theSameElementsInOrderAs expectedResult
-  //    }
-  //  }
-
 }
-
-//  import scala.math.Ordered._
-//  import io.circe.Encoder
-//  import io.circe.syntax._
-//
-//  import scala.math.Ordered._
-//
-//  val d: List[CarAdvert] = insertedAdverts.sortWith { (a, b) =>
-//    (a.mileage.map(_.value.value), b.mileage.map(_.value.value)) match {
-//      case (_, None)          => false
-//      case (None, _)          => true
-//      case (Some(x), Some(y)) => x < y
-//    }
-//  }
-//  expectedResult.foreach(x => println(x.asJson.spaces2))
-//  println("-----------")
-//  carAdverts.foreach(x => println(x.asJson.spaces2))

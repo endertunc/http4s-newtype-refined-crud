@@ -14,6 +14,7 @@ import cats.scalatest.ValidatedValues
 
 import io.circe.Json
 import io.circe.literal._
+import io.circe.syntax._
 
 import eu.timepit.refined.auto._
 
@@ -25,8 +26,9 @@ import car.advert.generators.CarAdvertGenerator
 import car.advert.generators.GeneratorsBase
 import car.advert.model.Mileage
 import car.advert.model.entity.CarAdvert
-import car.advert.model.entity.CarAdvert
 import car.advert.model.error.AppError.ValidationError
+import car.advert.model.error.Error_OUT
+import car.advert.model.error.Error_OUT.ValidationErrorResponse
 import car.advert.model.validation.CarAdvertValidator.InvalidDomainState
 import io.chrisdavenport.log4cats.SelfAwareStructuredLogger
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
@@ -83,16 +85,15 @@ class CarAdvertValidationSpec
             ]
           }
         """
+
     val validationResult: IO[Assertion] =
       validateCarAdvert[IO](newCarAdvertWithMileageAndFirstRegistration)
         .flatMap(_ => IO[Assertion](fail("invalid car advert passed validation")))
         .recoverWith {
-          case e: ValidationError =>
-            for {
-              response     <- e.toHttpResponse[IO]
-              jsonResponse <- response.as[Json]
-            } yield {
-              jsonResponse shouldBe expectedJson
+          case validationError: ValidationError =>
+            validationError.toErrorOut match {
+              case validationErrorResponse: ValidationErrorResponse =>
+                IO[Assertion](validationErrorResponse.asJson shouldBe expectedJson)
             }
           case NonFatal(e) => IO[Assertion](fail("CarAdvert_IN validation failed with unexpected exception.", e))
         }
@@ -115,14 +116,12 @@ class CarAdvertValidationSpec
       validateCarAdvert[IO](usedCarAdvertWithoutMileageAndFirstRegistration)
         .flatMap(_ => IO[Assertion](fail("invalid car advert passed validation")))
         .recoverWith {
-          case e: ValidationError =>
-            for {
-              response     <- e.toHttpResponse[IO]
-              jsonResponse <- response.as[Json]
-            } yield {
-              jsonResponse shouldBe expectedJson
+          case validationError: ValidationError =>
+            validationError.toErrorOut match {
+              case validationErrorResponse: ValidationErrorResponse =>
+                IO[Assertion](validationErrorResponse.asJson shouldBe expectedJson)
             }
-          case NonFatal(e) => IO[Assertion](fail("CarAdvert_IN validation failed with unexpected exception.", e))
+          case e: Error_OUT => IO[Assertion](fail("CarAdvert_IN validation failed with unexpected exception.", e))
         }
     validationResult.unsafeToFuture()
   }

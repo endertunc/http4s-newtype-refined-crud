@@ -5,6 +5,8 @@ import org.http4s.dsl.impl.OptionalQueryParamDecoderMatcher
 
 import cats.effect.Sync
 
+import doobie.refined.implicits._
+
 import eu.timepit.refined.api.RefinedTypeOps
 import eu.timepit.refined.types.numeric.NonNegLong
 
@@ -26,10 +28,14 @@ object Pagination extends PaginationValidator {
   def default[F[_]: Sync: Logger](): F[Pagination] = fromParams(None, None)
 
   object RefinedOffset extends RefinedTypeOps[NonNegLong, Long]
-  @newtype case class Offset(value: NonNegLong)
+  @newtype
+  @deriving(doobie.Meta)
+  case class Offset(value: NonNegLong)
 
   object RefinedLimit extends RefinedTypeOps[NonNegLong, Long]
-  @newtype case class Limit(value: NonNegLong)
+  @newtype
+  @deriving(doobie.Meta)
+  case class Limit(value: NonNegLong)
 
   object OffsetMatcher extends OptionalQueryParamDecoderMatcher[Long]("offset")
   object LimitMatcher extends OptionalQueryParamDecoderMatcher[Long]("limit")

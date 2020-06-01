@@ -11,10 +11,7 @@ import eu.timepit.refined.string.Uuid
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 
-import car.advert.model.OfferType.New
-import car.advert.model.OfferType.Used
 import car.advert.model.OfferType.{ New, Used }
-import car.advert.model.entity.CarAdvert
 import car.advert.model.entity.CarAdvert
 import enumeratum.scalacheck._
 

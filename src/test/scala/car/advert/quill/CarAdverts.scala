@@ -6,7 +6,6 @@ import doobie.syntax.connectionio.toConnectionIOOps
 
 import car.advert.model.Id
 import car.advert.model.entity.CarAdvert
-import car.advert.model.entity.CarAdvert
 import car.advert.quill.DoobiePostgresContext._
 import io.getquill.{ idiom => _ }
 

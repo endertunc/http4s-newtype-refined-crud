@@ -8,12 +8,10 @@ import com.colisweb.tracing.core.TracingContext
 
 import car.advert.TracingUtils._
 import car.advert.http.Pagination
-import car.advert.model.OrderByCriteria
 import car.advert.model.entity.CarAdvert
 import car.advert.model.error.AppError.NotFound
 import car.advert.model.validation.CarAdvertValidator
 import car.advert.model.{ Id, OrderByCriteria }
-import car.advert.repository.algebra.CarAdvertRepositoryAlgebra
 import car.advert.repository.algebra.CarAdvertRepositoryAlgebra
 import io.chrisdavenport.log4cats.SelfAwareStructuredLogger
 
@@ -35,6 +33,7 @@ class CarAdvertService[F[_]: Async]()(implicit L: SelfAwareStructuredLogger[F], 
       maybeCarAdvert <- carAdvertRepositoryAlgebra.findById(id)
       _              <- L.warn(tc.ctx)(s"Car advert with id [$id] is not found").whenA(maybeCarAdvert.isEmpty)
       carAdvert      <- Sync[F].fromOption(maybeCarAdvert, NotFound(s"CarAdvert with id [$id] is not found"))
+      _              <- L.trace(tc.ctx)(s"Car advert with id [$id] successfully retrieved")
     } yield carAdvert
 
   def update(carAdvert: CarAdvert)(implicit tc: TracingContext[F]): F[CarAdvert] =
@@ -46,7 +45,6 @@ class CarAdvertService[F[_]: Async]()(implicit L: SelfAwareStructuredLogger[F], 
       _                <- L.trace(tc.ctx)(s"Car advert with id [${carAdvert.id}] successfully updated")
     } yield updatedCarAdvert
 
-  // //ToDo log
   //  def update(carAdvert: CarAdvert): F[CarAdvert] =
   //    OptionT(carAdvertRepositoryAlgebra.update(carAdvert))
   //      .getOrElseF(NotFound(s"CarAdvert with id [${carAdvert.id}] is not found").raiseError[F, CarAdvert])
@@ -55,6 +53,7 @@ class CarAdvertService[F[_]: Async]()(implicit L: SelfAwareStructuredLogger[F], 
     for {
       _ <- L.trace(tc.ctx)(s"Deleting car advert by id [$id]")
       _ <- carAdvertRepositoryAlgebra.deleteById(id)
+      _ <- L.trace(tc.ctx)(s"Car advert with id [$id] successfully deleted")
     } yield ()
 
   def list(orderByCriteria: OrderByCriteria, pagination: Pagination)(implicit tc: TracingContext[F]): F[List[CarAdvert]] =

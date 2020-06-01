@@ -15,7 +15,6 @@ import car.advert.http.Pagination
 import car.advert.http.Pagination.Limit
 import car.advert.http.Pagination.Offset
 import car.advert.model.OrderByCriteria
-import car.advert.model.OrderByCriteria
 import car.advert.model.entity.CarAdvert
 import car.advert.repository.postgres.doobie.CarAdvertStatements
 

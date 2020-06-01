@@ -14,6 +14,7 @@ import cats.scalatest.ValidatedValues
 
 import io.circe._
 import io.circe.literal._
+import io.circe.syntax._
 
 import eu.timepit.refined.auto._
 
@@ -23,13 +24,11 @@ import org.scalatest.matchers.should.Matchers
 
 import Inspectors._
 import car.advert.generators.GeneratorsBase
-import car.advert.generators.GeneratorsBase
-import car.advert.model.FuelType
 import car.advert.model.FuelType
 import car.advert.model.OfferType
-import car.advert.model.OfferType
 import car.advert.model.error.AppError.InvalidFieldError
-import car.advert.model.error.AppError.InvalidFieldError
+import car.advert.model.error.Error_OUT
+import car.advert.model.error.Error_OUT.InvalidFieldResponse
 import car.advert.model.request.CarAdvert_IN
 import car.advert.model.validation.CarAdvertInValidator.InvalidField
 import io.chrisdavenport.log4cats.SelfAwareStructuredLogger
@@ -104,12 +103,11 @@ class CarAdvertInValidationSpec
 
     val validationResult: IO[Assertion] =
       validateCarAdvertIn[IO](carAdvertIn).flatMap(_ => IO[Assertion](fail("invalid car advert passed validation"))).recoverWith {
-        case e: InvalidFieldError =>
-          for {
-            response     <- e.toHttpResponse[IO]
-            jsonResponse <- response.as[Json]
-          } yield {
-            jsonResponse shouldBe expectedJson
+        case invalidFieldError: InvalidFieldError =>
+          invalidFieldError.toErrorOut match {
+            case invalidFieldResponse: InvalidFieldResponse =>
+              IO[Assertion](invalidFieldResponse.asJson shouldBe expectedJson)
+            case e: Error_OUT => IO[Assertion](fail(s"CarAdvert_IN validation failed with unexpected Error_OUT $e"))
           }
         case NonFatal(e) => IO[Assertion](fail("CarAdvert_IN validation failed with unexpected exception.", e))
       }
